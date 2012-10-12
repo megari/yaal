@@ -2,6 +2,7 @@
 #define __YAAL_IO__ 1
 
 #include "requirements.hh"
+#include "hardware_features.hh"
 
 #include <avr/io.h>
 #include <inttypes.h>
@@ -197,6 +198,23 @@ namespace yaal {
         Pin<port, bit>& operator= (bool state) {
             set(state);
             return *this;
+        }
+
+        Pin<port, bit>& operator^= (bool state)
+# ifndef AVR_WITH_PIN_TOGGLE
+         __attribute__ ((deprecated ("Your board doesn't support hardware toggling.")))
+# endif
+        {
+            if (state) {
+# ifdef AVR_WITH_PIN_TOGGLE
+                port::input::setBit(bit);
+# else
+                if (port::output::getBit(bit))
+                    port::output::clrBit(bit);
+                else
+                    port::output::setBit(bit);
+# endif
+            }
         }
     };
 
