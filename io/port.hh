@@ -215,14 +215,15 @@ namespace yaal {
     template<typename PinClass>
     class Reversed;
 
-    template<typename PortClass, bit_t bit>
+    template<typename PortClass, bit_t bit, typename AdcClass>
     class Pin : public internal::SingleBit<PortClass, bit> {
-        typedef Pin<PortClass, bit> self_type;
+        typedef Pin<PortClass, bit, AdcClass> self_type;
         typedef internal::SingleBit<PortClass, bit> super;
 
     public:
         PortClass port;
         internal::PinMode<PortClass, bit> mode;
+        AdcClass analog;
 
         /* assignment operator is not inherited */
         YAAL_INLINE("Pin operation")

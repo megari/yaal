@@ -2,6 +2,7 @@
 #define __YAAL_IO__NULL__ 1
 
 #include "../qualifiers.hh"
+#include "../adc/null.hh"
 
 namespace yaal {
     namespace internal {
@@ -35,7 +36,7 @@ namespace yaal {
                  internal::NullRegister,
                  internal::NullRegister> NullPort;
 
-    typedef Pin<NullPort, 0> NullPin;
+    typedef Pin<NullPort, 0, NullAdc> NullPin;
 }
 
 #endif
