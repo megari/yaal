@@ -400,6 +400,9 @@ uint16_t byte_to_hex(uint8_t byte) {
         }
 
         void pulse_enable() {
+            commit_status(); // This needs to be here because there must be
+                             // at least 60 ns between setting RS+RW and Enable.
+                             // At 16 MHz, 1 instruction takes 62.5 ns.
             status.enable = 1;
             commit_status();
             _delay_us(1); // >450 ns is a sufficient pulse width.
@@ -413,6 +416,9 @@ uint16_t byte_to_hex(uint8_t byte) {
         }
 
         uint8_t read_real() {
+            commit_status(); // This needs to be here because there must be
+                             // at least 60 ns between setting RS+RW and Enable.
+                             // At 16 MHz, 1 instruction takes 62.5 ns.
             status.enable = 1;
             status.data = 0x0f; // This seems to be needed for the read to work.
             commit_status();
@@ -434,7 +440,6 @@ uint16_t byte_to_hex(uint8_t byte) {
             status.rs = 0;
             while (read_fast() & 0x80);
             status.rs = old_rs;
-            commit_status(); // Is this necessary?
         }
 
     public:
@@ -503,8 +508,6 @@ uint16_t byte_to_hex(uint8_t byte) {
         // An 8-bit read without a wait. Used for reading the busy flag.
         uint8_t read_fast() {
             status.rw = 1;
-            commit_status(); // These need to be here because there must be
-            //_delay_us(1);  // at least 40 ns between setting RS+RW and Enable.
 
             uint8_t ret;
 
