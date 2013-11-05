@@ -12,7 +12,7 @@ uint16_t byte_to_hex(uint8_t byte) {
     return hbyte_to_hex(byte >> 4) << 8 | hbyte_to_hex(byte & 0x0f);
 }
 
-typedef LCDInterface_I2C<0, 1, 2, 4, 5, 6, 7, 3, true, 0x3F> I2CInterface;
+typedef LCDInterface_I2C<0, 1, 2, 4, 5, 6, 7, 3, true, 0x27> I2CInterface;
 typedef LiquidCrystalHD44780<I2CInterface, 2, false> LCD;
 
 void main() {
