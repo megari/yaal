@@ -5,8 +5,6 @@
 #include <../../communication/i2c_hw.hh>
 #ifdef __YAAL__
 
-#define DEBUG 0
-
 namespace yaal {
 
     template<typename Interface, uint8_t lines = 2, bool bigfont = false>
@@ -331,18 +329,6 @@ namespace yaal {
             uint8_t data : 4;
         } status;
 
-#if DEBUG
-Serial0 serial;
-
-uint8_t hbyte_to_hex(uint8_t hbyte) {
-    return hbyte < 10 ? '0' + hbyte : 'a' + hbyte - 10;
-}
-
-uint16_t byte_to_hex(uint8_t byte) {
-    return hbyte_to_hex(byte >> 4) << 8 | hbyte_to_hex(byte & 0x0f);
-}
-#endif
-
         void commit_status() {
             uint8_t tmp = 0;
             tmp |= status.rs << RS;
@@ -356,47 +342,16 @@ uint16_t byte_to_hex(uint8_t byte) {
             tmp |= ((data >> 1) & 0x01) << Data5;
             tmp |= (data & 0x01) << Data4;
 
-#if DEBUG
-            serial.put('%');
-            serial.put('\n');
-            uint16_t tmp_hex = byte_to_hex(tmp);
-            serial.put(tmp_hex >> 8);
-            serial.put(tmp_hex);
-            serial.put('\n');
-#endif
-
             I2c_HW.write(address, tmp);
-
-#if DEBUG
-            serial.put('%');
-            serial.put('\n');
-#endif
         }
 
         void read_data() {
             uint8_t tmp = I2c_HW.read(address);
 
-#if DEBUG
-            uint16_t tmp_hex = byte_to_hex(tmp);
-            serial.put('*');
-            serial.put('\n');
-            serial.put(tmp_hex >> 8);
-            serial.put(tmp_hex);
-            serial.put('\n');
-#endif
             status.data  = ((tmp >> Data7) & 0x01) << 3;
             status.data |= ((tmp >> Data6) & 0x01) << 2;
             status.data |= ((tmp >> Data5) & 0x01) << 1;
             status.data |= (tmp >> Data4) & 0x01;
-
-#if DEBUG
-            uint16_t data_hex = byte_to_hex(status.data);
-            serial.put(data_hex >> 8);
-            serial.put(data_hex);
-            serial.put('\n');
-            serial.put('*');
-            serial.put('\n');
-#endif
         }
 
         void pulse_enable() {
