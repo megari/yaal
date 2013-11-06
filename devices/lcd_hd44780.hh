@@ -315,6 +315,7 @@ namespace yaal {
     };
 
 
+    // Supports PCF8574/PCF8574A based I2C expanders.
     template<uint8_t RS, uint8_t RW, uint8_t Enable, uint8_t Data4, uint8_t Data5, uint8_t Data6, uint8_t Data7, uint8_t Backlight, bool Backlight_polarity, uint8_t address, typename SDA = PortC4, typename SCL = PortC5>
     class LCDInterface_I2C {
 
