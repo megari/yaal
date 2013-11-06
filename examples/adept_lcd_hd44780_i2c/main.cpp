@@ -12,6 +12,11 @@ uint16_t byte_to_hex(uint8_t byte) {
     return hbyte_to_hex(byte >> 4) << 8 | hbyte_to_hex(byte & 0x0f);
 }
 
+// There are two different pin configurations I know of. Pick whichever works.
+// Don't forget to select the correct polarity for the backlight pin. If there
+// is no backlight, toggle the polarity and you'll be fine.
+// Typical I2C addresses are 0x20-0x27 and 0x38-0x3F.
+//typedef LCDInterface_I2C<6, 5, 4, 0, 1, 2, 3, 7, false, 0x20> I2CInterface;
 typedef LCDInterface_I2C<0, 1, 2, 4, 5, 6, 7, 3, true, 0x27> I2CInterface;
 typedef LiquidCrystalHD44780<I2CInterface, 2, false> LCD;
 
