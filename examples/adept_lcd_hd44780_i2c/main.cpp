@@ -20,7 +20,17 @@ uint16_t byte_to_hex(uint8_t byte) {
 typedef LCDInterface_I2C<LcdBackPack_Type1, 0x27> I2CInterface;
 typedef LiquidCrystalHD44780<I2CInterface, 2, false> LCD;
 
+// These are the I2C pins for atmega328p. Set these according to the chip used.
+PortC4 sda;
+PortC5 scl;
+
 void main() {
+
+    // Initialize the I2C bus and enable internal pullups
+    scl.mode = INPUT_PULLUP;
+    sda.mode = INPUT_PULLUP;
+    sei();
+    I2c_HW.setup();
 
     // Use 2 lines, 5x8 font for the LCD
     LCD lcd;

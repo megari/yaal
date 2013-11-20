@@ -318,11 +318,8 @@ namespace yaal {
 
 
     // Supports PCF8574/PCF8574A based I2C expanders.
-    template<typename Backpack_type, uint8_t address, typename SDA = PortC4, typename SCL = PortC5>
+    template<typename Backpack_type, uint8_t address>
     class LCDInterface_I2C {
-
-        SDA sda;
-        SCL scl;
 
         Backpack_type status;
 
@@ -389,11 +386,6 @@ namespace yaal {
 
         // Returns the correct bit mode.
         uint8_t setup() {
-            sda.mode = INPUT_PULLUP;
-            scl.mode = INPUT_PULLUP;
-            sei();
-
-            I2c_HW.setup();
 
             _delay_ms(50);
 
