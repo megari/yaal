@@ -12,11 +12,18 @@ namespace yaal {
         typedef HWI2CBus self_type;
 
         volatile uint8_t databyte;
+        volatile const uint8_t *data_start;
+        volatile const uint8_t *data_end;
         volatile uint8_t addressbyte;
 
         volatile bool sending;
         volatile bool receiving;
+        volatile bool send_stop;
+
     public:
+        volatile bool got_sla_ack;
+        volatile bool wrote_all;
+        volatile bool got_data_ack;
 
         void setup(uint16_t speed = 100) {
             // 1. Set bitrate
@@ -32,20 +39,51 @@ namespace yaal {
             TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
         }
 
-        void write(uint8_t address, uint8_t data) {
-            databyte = data;
+        void write(uint8_t address, uint8_t data, bool s_start = true, bool stop = true) {
+            //databyte = data;
+            data_start = &data;
+            data_end = data_start + 1;
             addressbyte = address;
             sending = true;
-            TWCR |= (1 << TWSTA);
+            send_stop = stop;
+            got_sla_ack = wrote_all = got_data_ack = false;
+
+            if (s_start)
+                TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
+            else
+                TWCR |= (1 << TWIE) | (1 << TWINT);
 
             while (sending);
         }
 
-        uint8_t read(uint8_t address) {
+        void write_multi(uint8_t address, const uint8_t *start, const uint8_t *end, bool s_start = true, bool stop = true) {
+            data_start = start;
+            data_end = end;
+            addressbyte = address;
+            sending = true;
+            send_stop = stop;
+            got_sla_ack = wrote_all = got_data_ack = false;
+
+            if (s_start)
+                TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
+            else
+                TWCR |= (1 << TWIE) | (1 << TWINT);
+
+            while (sending);
+        }
+
+        uint8_t read(uint8_t address, bool s_start = true) {
             addressbyte = address;
             databyte = 0x00;
             receiving = true;
-            TWCR |= (1 << TWSTA);
+            send_stop = true;
+            got_sla_ack = wrote_all = got_data_ack = false;
+
+            if (s_start)
+                TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
+            else
+                TWCR |= (1 << TWIE) | (1 << TWINT);
+
             while (receiving);
 
             return databyte;
@@ -63,26 +101,52 @@ namespace yaal {
                     TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
                     break;
                 case TW_MT_SLA_ACK:
+                    got_sla_ack = true;
                     // Should send data byte.
-                    TWDR = databyte;
-                    TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
+                    if (data_start != data_end) {
+                        TWDR = *data_start++;
+                        TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
+                    }
+                    else {
+                        // Send stop, as we had no data to send.
+                        goto send_stop;
+                    }
                     break;
                 case TW_MR_DATA_NACK:
+                    got_data_ack = true;
                     // Should get byte and then stop.
                     databyte = TWDR;
-                    // Intentional fall-through.
+                    goto send_stop;
                 case TW_MT_DATA_ACK:
-                    // All went well. Send stop.
+                    got_data_ack = true;
+
+                    if (data_start != data_end) {
+                        TWDR = *data_start++;
+                        TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
+                        break;
+                    }
+
+                    wrote_all = true;
+
+                    // All went well. Send stop or repeated start.
+                    if (!send_stop) {
+                        TWCR = (1 << TWEA) | (1 << TWSTA) | (1 << TWEN);
+                        sending = false;
+                        break;
+                    }
+
                     // Intentional fall-through.
                 case TW_MR_SLA_NACK:
                 case TW_MT_SLA_NACK:
                 case TW_MT_DATA_NACK:
+send_stop:
                     // Send stop.
                     TWCR = (1 << TWEA) | (1 << TWSTO) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT); 
                     sending = false;
                     receiving = false;
                     break;
                 case TW_MR_SLA_ACK:
+                    got_sla_ack = true;
                     // Should get data byte. Need to NACK.
                     TWCR = (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
                     break;
