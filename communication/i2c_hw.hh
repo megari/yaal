@@ -39,8 +39,11 @@ namespace yaal {
             TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
         }
 
+        void deinit() {
+            TWCR = 0;
+        }
+
         void write(uint8_t address, uint8_t data, bool s_start = true, bool stop = true) {
-            //databyte = data;
             data_start = &data;
             data_end = data_start + 1;
             addressbyte = address;
