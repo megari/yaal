@@ -3,6 +3,8 @@
 #include "../requirements.hh"
 #ifdef __YAAL__
 
+#include "../types/autounion.hh"
+
 namespace yaal {
 
     namespace internal {
@@ -82,6 +84,103 @@ namespace yaal {
 #   undef YAAL_TRAIT
 #   undef YAAL_TRAIT_S
 #   undef YAAL_TRAIT_B
+
+    template<typename T>
+    constexpr bool integer_type = false;
+
+    template<>
+    constexpr bool integer_type<char> = true;
+    template<>
+    constexpr bool integer_type<signed char> = true;
+    template<>
+    constexpr bool integer_type<unsigned char> = true;
+    template<>
+    constexpr bool integer_type<signed short> = true;
+    template<>
+    constexpr bool integer_type<unsigned short> = true;
+    template<>
+    constexpr bool integer_type<signed int> = true;
+    template<>
+    constexpr bool integer_type<unsigned int> = true;
+    template<>
+    constexpr bool integer_type<signed long> = true;
+    template<>
+    constexpr bool integer_type<unsigned long> = true;
+    template<>
+    constexpr bool integer_type<signed long long> = true;
+    template<>
+    constexpr bool integer_type<unsigned long long> = true;
+
+    template<typename T, typename ...Ts>
+    constexpr bool integer_types = integer_type<T> && integer_types<Ts...>;
+
+    template<typename T>
+    constexpr bool integer_types<T> = integer_type<T>;
+
+    static_assert(!integer_type<float>, "integer_type fail!");
+    static_assert(!integer_type<double>, "integer_type fail!");
+    namespace {
+        struct foo_ { int foo; };
+        static_assert(!integer_type<foo_>, "integer_type fail!");
+        static_assert(!integer_type<autounion<foo_>>, "integer_type fail!");
+        static_assert(!integer_types<uint8_t, foo_>, "integer_types fail!");
+        static_assert(!integer_types<uint8_t, foo_, foo_>, "integer_types fail!");
+        static_assert(!integer_types<uint8_t, foo_, foo_, foo_>, "integer_types fail!");
+
+        static_assert(!integer_types<uint8_t, foo_, uint8_t, foo_>, "integer_types fail!");
+        static_assert(!integer_types<foo_, uint8_t, foo_, uint8_t>, "integer_types fail!");
+    }
+    static_assert(integer_type<char>, "integer_type fail!");
+    static_assert(integer_type<signed char>, "integer_type fail!");
+    static_assert(integer_type<unsigned char>, "integer_type fail!");
+    static_assert(integer_type<short>, "integer_type fail!");
+    static_assert(integer_type<signed short>, "integer_type fail!");
+    static_assert(integer_type<unsigned short>, "integer_type fail!");
+    static_assert(integer_type<int>, "integer_type fail!");
+    static_assert(integer_type<signed int>, "integer_type fail!");
+    static_assert(integer_type<unsigned int>, "integer_type fail!");
+    static_assert(integer_type<long>, "integer_type fail!");
+    static_assert(integer_type<signed long>, "integer_type fail!");
+    static_assert(integer_type<unsigned long>, "integer_type fail!");
+    static_assert(integer_type<long long>, "integer_type fail!");
+    static_assert(integer_type<signed long long>, "integer_type fail!");
+    static_assert(integer_type<unsigned long long>, "integer_type fail!");
+    static_assert(integer_type<int8_t>, "integer_type fail!");
+    static_assert(integer_type<uint8_t>, "integer_type fail!");
+    static_assert(integer_type<int16_t>, "integer_type fail!");
+    static_assert(integer_type<uint16_t>, "integer_type fail!");
+    static_assert(integer_type<int32_t>, "integer_type fail!");
+    static_assert(integer_type<uint32_t>, "integer_type fail!");
+    static_assert(integer_type<int64_t>, "integer_type fail!");
+    static_assert(integer_type<uint64_t>, "integer_type fail!");
+
+    static_assert(integer_types<char>, "integer_types fail!");
+    static_assert(integer_types<signed char>, "integer_types fail!");
+    static_assert(integer_types<unsigned char>, "integer_types fail!");
+    static_assert(integer_types<short>, "integer_types fail!");
+    static_assert(integer_types<signed short>, "integer_types fail!");
+    static_assert(integer_types<unsigned short>, "integer_types fail!");
+    static_assert(integer_types<int>, "integer_types fail!");
+    static_assert(integer_types<signed int>, "integer_types fail!");
+    static_assert(integer_types<unsigned int>, "integer_types fail!");
+    static_assert(integer_types<long>, "integer_types fail!");
+    static_assert(integer_types<signed long>, "integer_types fail!");
+    static_assert(integer_types<unsigned long>, "integer_types fail!");
+    static_assert(integer_types<long long>, "integer_types fail!");
+    static_assert(integer_types<signed long long>, "integer_types fail!");
+    static_assert(integer_types<unsigned long long>, "integer_types fail!");
+    static_assert(integer_types<int8_t>, "integer_types fail!");
+    static_assert(integer_types<uint8_t>, "integer_types fail!");
+    static_assert(integer_types<int16_t>, "integer_types fail!");
+    static_assert(integer_types<uint16_t>, "integer_types fail!");
+    static_assert(integer_types<int32_t>, "integer_types fail!");
+    static_assert(integer_types<uint32_t>, "integer_types fail!");
+    static_assert(integer_types<int64_t>, "integer_types fail!");
+    static_assert(integer_types<uint64_t>, "integer_types fail!");
+    static_assert(integer_types<uint8_t,  uint32_t, uint64_t, uint16_t>, "integer_types fail!");
+    static_assert(integer_types<uint16_t, uint64_t, uint32_t, uint8_t>, "integer_types fail!");
+    static_assert(integer_types<uint32_t, uint16_t, uint8_t, uint64_t>, "integer_types fail!");
+    static_assert(integer_types<uint64_t, uint8_t,  uint16_t, uint32_t>, "integer_types fail!");
 
 }
 
