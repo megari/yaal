@@ -10,6 +10,10 @@
 
 namespace yaal {
 
+    using yaal::internal::enable_if_t;
+    using yaal::integer_type;
+    using yaal::integer_types;
+
     class HWI2CBus {
         typedef HWI2CBus self_type;
 
@@ -45,8 +49,9 @@ namespace yaal {
             TWCR = 0;
         }
 
-        void write(uint8_t address, uint8_t data, bool s_start = true, bool stop = true) {
-            data_start = &data;
+        template<bool s_start = true, bool stop = true>
+        void write(uint8_t address, uint8_t reg) {
+            data_start = &reg;
             data_end = data_start + 1;
             addressbyte = address;
             sending = true;
@@ -61,7 +66,8 @@ namespace yaal {
             while (sending);
         }
 
-        void write_multi(uint8_t address, const uint8_t *start, const uint8_t *end, bool s_start = true, bool stop = true) {
+        template<bool s_start = true, bool stop = true>
+        void write(uint8_t address, const uint8_t *start, const uint8_t *end) {
             data_start = start;
             data_end = end;
             addressbyte = address;
@@ -92,6 +98,38 @@ namespace yaal {
             while (receiving);
 
             return databyte;
+        }
+
+        template<typename T, bool s_start = true, bool stop = true, enable_if_t<!integer_type<T>, T>* = nullptr>
+        void write(uint8_t addr, T&& val)
+        {
+            static_assert(!integer_type<T>, "Integer type not allowed here");
+            autounion<T, true> tmp(val);
+            uint8_t data[tmp.size] = { 0x00 };
+            for (uint8_t i = 0; i < sizeof(data); ++i)
+                data[i] = tmp[i];
+
+            write<s_start, stop>(addr, data, data + sizeof(data));
+        }
+
+        template<typename T, bool s_start = true, bool stop = true, enable_if_t<!integer_type<T>, T>* = nullptr>
+        void write(uint8_t addr, uint8_t reg, T&& val)
+        {
+            static_assert(!integer_type<T>, "Integer type not allowed here");
+            autounion<T, true> tmp(val);
+            uint8_t data[tmp.size + 1] = { reg, };
+            for (uint8_t i = 1; i < sizeof(data); ++i)
+                data[i] = tmp[i];
+
+            write<s_start, stop>(addr, data, data + sizeof(data));
+        }
+
+        template<typename ...Ts, enable_if_t<integer_types<Ts...>, Ts...>* = nullptr, bool s_start = true, bool stop = true>
+        void write(uint8_t addr, Ts... args)
+        {
+            uint8_t data[] = { static_cast<uint8_t>(args)... };
+            static_assert(sizeof(data) == sizeof...(args), "write_multi_new static error");
+            write<s_start, stop>(addr, data, data + sizeof(data));
         }
 
         void isr() {
@@ -163,34 +201,6 @@ send_stop:
 
     HWI2CBus I2c_HW;
 
-    using yaal::internal::enable_if_t;
-    using yaal::integer_type;
-    using yaal::integer_types;
-
-    template<typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
-    void I2C_WRITE(uint8_t addr, T&& val)
-    {
-        static_assert(!integer_type<T>, "Integer type not allowed here");
-        autounion<T, true> tmp(val);
-        uint8_t data[tmp.size] = { 0x00 };
-        for (uint8_t i = 0; i < sizeof(data); ++i)
-            data[i] = tmp[i];
-
-        I2c_HW.write_multi(addr, data, data + sizeof(data));
-    }
-
-    template<typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
-    void I2C_WRITE(uint8_t addr, uint8_t reg, T&& val)
-    {
-        static_assert(!integer_type<T>, "Integer type not allowed here");
-        autounion<T, true> tmp(val);
-        uint8_t data[tmp.size + 1] = { reg, };
-        for (uint8_t i = 1; i < sizeof(data); ++i)
-            data[i] = tmp[i];
-
-        I2c_HW.write_multi(addr, data, data + sizeof(data));
-    }
-
 #if 0
     template<typename T>
     void I2C_WRITE(uint8_t addr, uint8_t reg, T val)
@@ -206,14 +216,6 @@ send_stop:
         I2c_HW.write(addr, static_cast<uint8_t>(val));
     }
 #endif
-
-    template<typename ...Ts, enable_if_t<integer_types<Ts...>, Ts...>* = nullptr>
-    void I2C_WRITE(uint8_t addr, Ts... args)
-    {
-        uint8_t data[] = { static_cast<uint8_t>(args)... };
-        static_assert(sizeof(data) == sizeof...(args), "I2C_WRITE static error");
-        I2c_HW.write_multi(addr, data, data + sizeof(data));
-    }
 
 }
 
