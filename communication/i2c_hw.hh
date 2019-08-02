@@ -3,6 +3,8 @@
 #include "../requirements.hh"
 #ifdef __YAAL__
 
+#include <../types/helpers.hh>
+
 #include <avr/interrupt.h>
 #include <compat/twi.h>
 
@@ -161,69 +163,29 @@ send_stop:
 
     HWI2CBus I2c_HW;
 
-    template<bool b, typename T>
-    struct enable_if {};
-    template<typename T>
-    struct enable_if<true, T> { typedef T type; };
-    template<bool b, typename T>
-    using enable_if_t = typename enable_if<b, T>::type;
+    using yaal::internal::enable_if_t;
+    using yaal::integer_type;
+    using yaal::integer_types;
 
-    template<typename T>
-    constexpr bool integer_type = false;
-    template<>
-    constexpr bool integer_type<char> = true;
-    template<>
-    constexpr bool integer_type<signed char> = true;
-    template<>
-    constexpr bool integer_type<unsigned char> = true;
-    template<>
-    constexpr bool integer_type<signed short> = true;
-    template<>
-    constexpr bool integer_type<unsigned short> = true;
-    template<>
-    constexpr bool integer_type<signed int> = true;
-    template<>
-    constexpr bool integer_type<unsigned int> = true;
-    template<>
-    constexpr bool integer_type<signed long> = true;
-    template<>
-    constexpr bool integer_type<unsigned long> = true;
-    template<>
-    constexpr bool integer_type<signed long long> = true;
-    template<>
-    constexpr bool integer_type<unsigned long long> = true;
-
-    static_assert(integer_type<char>, "integer_type fail!");
-    static_assert(integer_type<signed char>, "integer_type fail!");
-    static_assert(integer_type<unsigned char>, "integer_type fail!");
-    static_assert(integer_type<short>, "integer_type fail!");
-    static_assert(integer_type<signed short>, "integer_type fail!");
-    static_assert(integer_type<unsigned short>, "integer_type fail!");
-    static_assert(integer_type<int>, "integer_type fail!");
-    static_assert(integer_type<signed int>, "integer_type fail!");
-    static_assert(integer_type<unsigned int>, "integer_type fail!");
-    static_assert(integer_type<long>, "integer_type fail!");
-    static_assert(integer_type<signed long>, "integer_type fail!");
-    static_assert(integer_type<unsigned long>, "integer_type fail!");
-    static_assert(integer_type<long long>, "integer_type fail!");
-    static_assert(integer_type<signed long long>, "integer_type fail!");
-    static_assert(integer_type<unsigned long long>, "integer_type fail!");
-    static_assert(integer_type<int8_t>, "integer_type fail!");
-    static_assert(integer_type<uint8_t>, "integer_type fail!");
-    static_assert(integer_type<int16_t>, "integer_type fail!");
-    static_assert(integer_type<uint16_t>, "integer_type fail!");
-    static_assert(integer_type<int32_t>, "integer_type fail!");
-    static_assert(integer_type<uint32_t>, "integer_type fail!");
-    static_assert(integer_type<int64_t>, "integer_type fail!");
-    static_assert(integer_type<uint64_t>, "integer_type fail!");
-
-    template<typename T, enable_if_t<!integer_type<T>, T> = 0>
-    void I2C_WRITE(uint8_t addr, uint8_t reg, T val)
+    template<typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
+    void I2C_WRITE(uint8_t addr, T&& val)
     {
         static_assert(!integer_type<T>, "Integer type not allowed here");
         autounion<T, true> tmp(val);
         uint8_t data[tmp.size] = { 0x00 };
         for (uint8_t i = 0; i < sizeof(data); ++i)
+            data[i] = tmp[i];
+
+        I2c_HW.write_multi(addr, data, data + sizeof(data));
+    }
+
+    template<typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
+    void I2C_WRITE(uint8_t addr, uint8_t reg, T&& val)
+    {
+        static_assert(!integer_type<T>, "Integer type not allowed here");
+        autounion<T, true> tmp(val);
+        uint8_t data[tmp.size + 1] = { reg, };
+        for (uint8_t i = 1; i < sizeof(data); ++i)
             data[i] = tmp[i];
 
         I2c_HW.write_multi(addr, data, data + sizeof(data));
@@ -236,17 +198,17 @@ send_stop:
         static_assert(!integer_type<T>, "Integer type not allowed here");
         I2C_WRITE(addr, autounion<T, true>(val));
     }
-#endif
 
-    template<typename T, enable_if_t<integer_type<T>, T> = 0>
-    void I2C_WRITE(uint8_t addr, uint8_t reg, T val)
+    template<typename T, enable_if_t<integer_type<T>, T>* = nullptr>
+    void I2C_WRITE(uint8_t addr, T val)
     {
         static_assert(integer_type<T>, "Integer type required here");
         I2c_HW.write(addr, static_cast<uint8_t>(val));
     }
+#endif
 
-    template<typename ...Ts, enable_if_t<integer_type<Ts...>, Ts...> = 0>
-    void I2C_WRITE(uint8_t addr, uint8_t reg, Ts... args)
+    template<typename ...Ts, enable_if_t<integer_types<Ts...>, Ts...>* = nullptr>
+    void I2C_WRITE(uint8_t addr, Ts... args)
     {
         uint8_t data[] = { static_cast<uint8_t>(args)... };
         static_assert(sizeof(data) == sizeof...(args), "I2C_WRITE static error");
