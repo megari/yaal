@@ -20,6 +20,17 @@ namespace yaal {
             typedef true_type type;
         };
 
+        template<bool b, typename ...Ts>
+        struct enable_if {};
+
+        template<typename ...Args>
+        struct pack { };
+        template<typename ...Ts>
+        struct enable_if<true, Ts...> { typedef pack<Ts...> type; };
+
+        template<bool b, typename ...Ts>
+        using enable_if_t = typename enable_if<b, Ts...>::type;
+
     }
 
 }
