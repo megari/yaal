@@ -25,6 +25,7 @@ namespace yaal {
         volatile bool sending;
         volatile bool receiving;
         volatile bool send_stop;
+        volatile bool error;
 
     public:
         typedef void (*trace_func_t)(uint8_t, const uint8_t *, const uint8_t *, bool, bool);
@@ -74,13 +75,13 @@ namespace yaal {
         }
 
         template<bool s_start = true, bool stop = true>
-        void write(uint8_t address, const uint8_t *start, const uint8_t *end) {
+        bool write(uint8_t address, const uint8_t *start, const uint8_t *end) {
             data_start = start;
             data_end = end;
             addressbyte = address;
             sending = true;
             send_stop = stop;
-            got_sla_ack = wrote_all = got_data_ack = false;
+            got_sla_ack = wrote_all = got_data_ack = error = false;
 
             if (trace_func)
                 trace_func(address, start, end, s_start, stop);
@@ -91,6 +92,8 @@ namespace yaal {
                 TWCR |= (1 << TWIE) | (1 << TWINT);
 
             while (sending);
+
+            return error;
         }
 
         uint8_t read(uint8_t address, bool s_start = true) {
@@ -98,7 +101,7 @@ namespace yaal {
             databyte = 0x00;
             receiving = true;
             send_stop = true;
-            got_sla_ack = wrote_all = got_data_ack = false;
+            got_sla_ack = wrote_all = got_data_ack = error = false;
 
             if (s_start)
                 TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
@@ -110,8 +113,8 @@ namespace yaal {
             return databyte;
         }
 
-        template<typename T, bool s_start = true, bool stop = true, enable_if_t<!integer_type<T>, T>* = nullptr>
-        void write(uint8_t addr, T&& val)
+        template<bool s_start = true, bool stop = true, typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
+        bool write(uint8_t addr, T&& val)
         {
             static_assert(!integer_type<T>, "Integer type not allowed here");
             autounion<T, true> tmp(val);
@@ -119,11 +122,11 @@ namespace yaal {
             for (uint8_t i = 0; i < sizeof(data); ++i)
                 data[i] = tmp[i];
 
-            write<s_start, stop>(addr, data, data + sizeof(data));
+            return write<s_start, stop>(addr, data, data + sizeof(data));
         }
 
-        template<typename T, bool s_start = true, bool stop = true, enable_if_t<!integer_type<T>, T>* = nullptr>
-        void write(uint8_t addr, uint8_t reg, T&& val)
+        template<bool s_start = true, bool stop = true, typename T, enable_if_t<!integer_type<T>, T>* = nullptr>
+        bool write(uint8_t addr, uint8_t reg, T&& val)
         {
             static_assert(!integer_type<T>, "Integer type not allowed here");
             autounion<T, true> tmp(val);
@@ -131,15 +134,15 @@ namespace yaal {
             for (uint8_t i = 1; i < sizeof(data); ++i)
                 data[i] = tmp[i];
 
-            write<s_start, stop>(addr, data, data + sizeof(data));
+            return write<s_start, stop>(addr, data, data + sizeof(data));
         }
 
-        template<typename ...Ts, enable_if_t<integer_types<Ts...>, Ts...>* = nullptr, bool s_start = true, bool stop = true>
-        void write(uint8_t addr, Ts... args)
+        template<bool s_start = true, bool stop = true, typename ...Ts, enable_if_t<integer_types<Ts...>, Ts...>* = nullptr>
+        bool write(uint8_t addr, Ts... args)
         {
             uint8_t data[] = { static_cast<uint8_t>(args)... };
-            static_assert(sizeof(data) == sizeof...(args), "write_multi_new static error");
-            write<s_start, stop>(addr, data, data + sizeof(data));
+            static_assert(sizeof(data) == sizeof...(args), "write() static error");
+            return write<s_start, stop>(addr, data, data + sizeof(data));
         }
 
         void isr() {
@@ -188,10 +191,11 @@ namespace yaal {
                         break;
                     }
 
-                    // Intentional fall-through.
+                    goto send_stop;
                 case TW_MR_SLA_NACK:
                 case TW_MT_SLA_NACK:
                 case TW_MT_DATA_NACK:
+                    error = true;
 send_stop:
                     // Send stop.
                     TWCR = (1 << TWEA) | (1 << TWSTO) | (1 << TWEN) | (1 << TWIE) | (1 << TWINT); 
