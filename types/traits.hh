@@ -87,6 +87,10 @@ namespace yaal {
 
     template<typename T>
     constexpr bool integer_type = false;
+    template<typename T>
+    constexpr bool integer_type<T&> = integer_type<T>;
+    template<typename T>
+    constexpr bool integer_type<T&&> = integer_type<T>;
 
     template<>
     constexpr bool integer_type<char> = true;
