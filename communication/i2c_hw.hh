@@ -58,23 +58,6 @@ namespace yaal {
         }
 
         template<bool s_start = true, bool stop = true>
-        void write(uint8_t address, uint8_t reg) {
-            data_start = &reg;
-            data_end = data_start + 1;
-            addressbyte = address;
-            sending = true;
-            send_stop = stop;
-            got_sla_ack = wrote_all = got_data_ack = false;
-
-            if (s_start)
-                TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
-            else
-                TWCR |= (1 << TWIE) | (1 << TWINT);
-
-            while (sending);
-        }
-
-        template<bool s_start = true, bool stop = true>
         bool write(uint8_t address, const uint8_t *start, const uint8_t *end) {
             data_start = start;
             data_end = end;
