@@ -27,6 +27,9 @@ namespace yaal {
         volatile bool send_stop;
 
     public:
+        typedef void (*trace_func_t)(uint8_t, const uint8_t *, const uint8_t *, bool, bool);
+        trace_func_t trace_func = nullptr;
+
         volatile bool got_sla_ack;
         volatile bool wrote_all;
         volatile bool got_data_ack;
@@ -47,6 +50,10 @@ namespace yaal {
 
         void deinit() {
             TWCR = 0;
+        }
+
+        void set_trace(trace_func_t f) {
+            trace_func = f;
         }
 
         template<bool s_start = true, bool stop = true>
@@ -74,6 +81,9 @@ namespace yaal {
             sending = true;
             send_stop = stop;
             got_sla_ack = wrote_all = got_data_ack = false;
+
+            if (trace_func)
+                trace_func(address, start, end, s_start, stop);
 
             if (s_start)
                 TWCR |= (1 << TWSTA) | (1 << TWIE) | (1 << TWINT);
