@@ -4,6 +4,7 @@
 #ifdef __YAAL__
 
 #include <../types/helpers.hh>
+#include <../types/traits.hh>
 
 #include <avr/interrupt.h>
 #include <compat/twi.h>
