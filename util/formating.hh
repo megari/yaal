@@ -8,13 +8,20 @@
 #  include <avr/pgmspace.h>
 #endif
 
-namespace yaal {
+#include "../types/helpers.hh"
 
-    // TODO: use template to optimize for different cases
-    // Also give function to put chars directly into stream, instead of reversing
+namespace yaal {
+    using yaal::internal::enable_if_t;
+    using yaal::integer_type;
+    using yaal::signed_integer_type;
+    using yaal::unsigned_integer_type;
+
+    // TODO: give function to put chars directly into stream, instead of
+    // reversing.
     // That also allows using internal buffer only
     // This might cause performance impact if not inlined
-    static char * ntoa(int32_t n, char * s, uint8_t b) {
+    template<typename T, enable_if_t<signed_integer_type<T>, T>* = nullptr>
+    static char * ntoa(T n, char * s, uint8_t b) {
         uint8_t i = 0;
 
         // PART 1 - create string
@@ -46,6 +53,32 @@ namespace yaal {
         return s;
     }
 
+    template<typename T, enable_if_t<unsigned_integer_type<T>, T>* = nullptr>
+    static char * ntoa(T n, char * s, uint8_t b) {
+        uint8_t i = 0;
+
+        // PART 1 - create string
+        do {
+            // 'a' - 10 == 'W'
+            s[i++] = ((n % b) < 10 ? '0' : 'W') + (n % b);
+        } while ((n /= b) > 0);
+
+        s[i] = '\0';
+
+        // PART 2 - reverse
+        char *p1, *p2, tmp;
+        for (p1 = s, p2 = s + i - 1; p2 > p1; ++p1, --p2) {
+            tmp = *p2;
+            *p2 = *p1;
+            *p1 = tmp;
+        }
+
+        return s;
+    }
+
+    static inline char * ntoa(bool n, char * s, uint8_t b) {
+        return ntoa(n ? 1U : 0U, s, b);
+    }
 
     namespace internal {
 
@@ -87,7 +120,7 @@ namespace yaal {
 
             template< typename Stream >
             void operator() (Stream& stream) {
-                char buf[11];
+                char buf[18];
                 ntoa(value, buf, base);
                 // TODO: prefix hex with 0x
                 stream << buf;
