@@ -11,7 +11,7 @@ selection=$@
 selection=${selection:-$(ls -1)}
 
 GXX=g++
-GXXFLAGS="-I../include -std=c++11 -Wall"
+GXXFLAGS="-I../include -std=c++14 -fpermissive -Wall"
 
 
 build_and_run() {

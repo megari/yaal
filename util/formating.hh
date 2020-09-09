@@ -9,6 +9,7 @@
 #endif
 
 #include "../types/helpers.hh"
+#include "../types/traits.hh"
 
 namespace yaal {
     using yaal::internal::enable_if_t;
