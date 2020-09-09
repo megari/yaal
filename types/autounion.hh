@@ -6,14 +6,17 @@
 /* yaal/types/autounion.hh
 */
 
+#include <stdlib.h>
+
 namespace yaal {
 
-    template<typename T, bool bigendian = false>
+    template<typename T, bool bigendian = false, size_t arrsz = sizeof(T)>
     class autounion {
+        static_assert(arrsz >= sizeof(T), "Invalid array size!");
 
         union data_u {
             T value;
-            uint8_t bytes[sizeof(T)];
+            uint8_t bytes[arrsz];
             data_u(T const& t): value(t) {}
         } data;
 
