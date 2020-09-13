@@ -35,44 +35,16 @@ namespace yaal {
         template<typename T>
         struct typeof_foo {
             using type = T;
-            type val;
-            typeof_foo() {}
         } __attribute__((packed));
 
         template<typename T>
-        struct typeof_foo<T&> {
-            using type = typename typeof_foo<T>::type;
-            type val;
-            typeof_foo() {}
-        };
+        struct typeof_foo<T&> : public typeof_foo<T> {};
 
         template<typename T>
-        struct typeof_foo<T&&> {
-            using type = typename typeof_foo<T>::type;
-            type val;
-            typeof_foo() {}
-        };
+        struct typeof_foo<T&&> : public typeof_foo<T> {};
 
         template<typename T>
-        constexpr bool nonref_type = true;
-        template<typename T>
-        constexpr bool nonref_type<T&> = false;
-        template<typename T>
-        constexpr bool nonref_type<T&&> = false;
-
-        template<typename T>
-        constexpr bool ref_type = !nonref_type<T>;
-
-        //template<typename T, enable_if_t<nonref_type<T>, T>* = nullptr>
-        //constexpr T typeof_func(T);
-        template<typename T /*, enable_if_t<nonref_type<T>, T>* = nullptr*/>
-        constexpr T typeof_func(T&);
-        template<typename T /*, enable_if_t<nonref_type<T>, T>* = nullptr*/>
-        constexpr T typeof_func(T&&);
-
-        template<typename T>
-        using typeof_t =
-            decltype(typeof_func(typeof_foo<T>().val));
+        using typeof_t = typename typeof_foo<T>::type;
 
         template<typename T, typename S>
         constexpr bool is_same_type = false;
@@ -112,6 +84,23 @@ namespace yaal {
             static_assert(is_same_type<typeof_t<decltype(char_s().c)>, char>,
                 "Type mismatch. :(");
         }
+
+        static_assert(!is_same_type<int, int&>, "Bad type match. :(");
+        static_assert(!is_same_type<int&, int>, "Bad type match. :(");
+        static_assert(!is_same_type<int&, typeof_t<int&>>,
+            "Bad type match. :(");
+        static_assert(!is_same_type<typeof_t<int&>, int&>,
+            "Bad type match. :(");
+
+        static_assert(!is_same_type<int, int&&>, "Bad type match. :(");
+        static_assert(!is_same_type<int&&, int>, "Bad type match. :(");
+        static_assert(!is_same_type<int&&, typeof_t<int&&>>,
+            "Bad type match. :(");
+        static_assert(!is_same_type<typeof_t<int&&>, int&&>,
+            "Bad type match. :(");
+
+        static_assert(!is_same_type<int&, int&&>, "Bad type match. :(");
+        static_assert(!is_same_type<int&&, int&>, "Bad type match. :(");
     }
 
 }
