@@ -192,8 +192,8 @@ namespace yaal {
         }
 
         YAAL_INLINE("Pin RAII wrapper")
-        internal::RAIIPin<self_type> as(Mode mode) {
-            return internal::RAIIPin<self_type>(mode);
+        internal::RAIIPin<self_type> as(Mode mode_) {
+            return internal::RAIIPin<self_type>(mode_);
         }
 
         /* Hardware pin toggle */
