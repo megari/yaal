@@ -84,12 +84,18 @@ namespace yaal {
     namespace internal {
 
         template< typename T >
-        struct StreamActor : public T {};
+        struct StreamActor : public T {
+            constexpr StreamActor() : T() {}
+            template< typename S >
+            explicit StreamActor(S val) : T(val) {}
+        };
 
 #     ifdef __AVR__
         struct _StreamPgmString {
             const char* string;
 
+            constexpr _StreamPgmString() : string(nullptr) {}
+            explicit _StreamPgmString(const char *str) : string(str) {}
             template< typename Stream >
             void operator() (Stream& stream) {
                 const char* s = string;
@@ -104,6 +110,7 @@ namespace yaal {
 #     endif
 
         struct _StreamEndline {
+            constexpr _StreamEndline() {}
             template< typename Stream >
             void operator() (Stream& stream) {
 #             ifdef YAAL_WIN_STYLE_ENDL
@@ -142,8 +149,7 @@ namespace yaal {
 #   endif
 #   define _T(s) (__extension__({ \
         static const char __attribute__ ((__progmem__,used)) __CONCAT(c_,__LINE__)[] = (s); \
-        ::yaal::internal::StreamPgmString __CONCAT(p_,__LINE__); \
-        __CONCAT(p_,__LINE__).string = __CONCAT(c_,__LINE__); \
+        ::yaal::internal::StreamPgmString __CONCAT(p_,__LINE__)(__CONCAT(c_,__LINE__)); \
         __CONCAT(p_,__LINE__); \
     }))
 # endif
