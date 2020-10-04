@@ -152,6 +152,12 @@ namespace yaal {
         ::yaal::internal::StreamPgmString __CONCAT(p_,__LINE__)(__CONCAT(c_,__LINE__)); \
         __CONCAT(p_,__LINE__); \
     }))
+
+#   define _T_DECL(name, s) \
+        static const char __attribute__ ((__progmem__,used)) __CONCAT(name,_c)[] = (s); \
+        ::yaal::internal::StreamPgmString __CONCAT(name,_p)(__CONCAT(name,_c))
+
+#   define _T_REF(name) __CONCAT(name,_p)
 # endif
 
 
