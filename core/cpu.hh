@@ -93,7 +93,7 @@ namespace yaal {
             }
 
             YAAL_INLINE("Cpu::Clock::get")
-            freq_t get() {
+            constexpr freq_t get() {
 #ifdef YAAL_UNSTABLE_F_CPU
                 return f_clock >> prescaler;
 #else
@@ -102,7 +102,7 @@ namespace yaal {
             }
 
             YAAL_INLINE("Cpu::Clock::operator freq_t")
-            operator freq_t () {
+            constexpr operator freq_t () {
                 return get();
             }
         };
